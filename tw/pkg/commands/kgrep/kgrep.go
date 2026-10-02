@@ -47,6 +47,7 @@ type cfg struct {
 	Namespace          string
 	Timeout            time.Duration
 	IgnoreCase         bool
+	CaseSensitive      bool
 	Container          string
 	Retry              int
 	Patterns           []string
@@ -80,7 +81,9 @@ func Command() *cobra.Command {
 	cmd.Flags().StringVarP(&cfg.Namespace, "namespace", "n", "default", "namespace to install the release into")
 	cmd.Flags().DurationVarP(&cfg.Timeout, "timeout", "t", DefaultTimeout, "time to wait for logs to appear")
 	cmd.Flags().IntVarP(&cfg.Retry, "retry", "r", 0, "number of times to retry a failed request")
-	cmd.Flags().BoolVarP(&cfg.IgnoreCase, "ignore-case", "i", false, "toggle to ignore case for the match")
+	cmd.Flags().BoolVarP(&cfg.IgnoreCase, "ignore-case", "i", true, "No Op")
+	cmd.Flags().MarkDeprecated("ignore-case", "No Op, kept for compatibility")
+	cmd.Flags().BoolVarP(&cfg.CaseSensitive, "case-sensitive", "s", false, "toggle to match with case sensitivity")
 	cmd.Flags().StringVarP(&cfg.Container, "container", "c", "", "container to grep logs from (if not specified, will search in all)")
 	cmd.Flags().StringArrayVarP(&cfg.Patterns, "regexp", "e", nil, "regular expression to match that must be present")
 	cmd.Flags().StringArrayVar(&cfg.NotExpected, "ne", nil, "regular expression that must NOT be present")
@@ -271,7 +274,7 @@ func (c *cfg) prerun(_ context.Context, args []string) error {
 
 	// Compile expected patterns
 	for _, p := range c.Patterns {
-		if c.IgnoreCase {
+		if !c.CaseSensitive {
 			p = "(?i)" + p
 		}
 		c.compiled = append(c.compiled, regexp.MustCompile(p))
@@ -279,7 +282,7 @@ func (c *cfg) prerun(_ context.Context, args []string) error {
 
 	// Compile not-expected patterns
 	for _, p := range c.NotExpected {
-		if c.IgnoreCase {
+		if !c.CaseSensitive {
 			p = "(?i)" + p
 		}
 		c.notExpectedCompiled = append(c.notExpectedCompiled, regexp.MustCompile(p))
